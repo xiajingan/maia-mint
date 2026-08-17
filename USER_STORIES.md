@@ -2,6 +2,8 @@
 
 > 演进顺序：M0 Resolver/单目标 → M1 联系人广播 → M2 群广播 → M3 群管理 → M4 大规模 Campaign。完成必须包含目标快照、频控占用、Stem 对账和逐目标真实结果。
 
+Seed 不独立迭代：Mint Story 的 Seed 子任务只登记在 `maia-seed:CONSUMERS.yaml`，本文件不复制映射。Story 进入 `ready` 前须存在对应单边记录并固定 wheel version + SHA-256；Test 验证的同一 digest 原样提升 release。Campaign/Resolver/频控业务语义不得下沉 Seed，禁止 Git/path 依赖。
+
 | ID | 用户故事 | 验收标准 | 来源 | 状态 |
 |---|---|---|---|---|
 | MINT-001 | 作为 Mint，我希望通过稳定 Resolver 解析任务输入。 | 各 Resolver 独立；逐对象校验 Own/Use；错误可理解且有契约测试。 | MNT-005 | `draft` |

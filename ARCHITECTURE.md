@@ -6,6 +6,10 @@
 
 Mint 将联系人广播、群广播和群管理等业务意图解析成已授权、可审计的 Stem Task Command。它负责业务规则、目标解析、去重、频控、影响预览和结果汇总；Task/WorkflowRun/Todo/Execution 全部是 Stem 的规范运行事实，Mint 不直接控制 Celt/Vine，也不直连 Mud 数据库。
 
+### Seed 依赖契约
+
+Mint 通过正式、精确锁定的 Seed wheel 按需复用配置、上下文、错误/事件、通用状态原语、安全/加密/审计、可观测性及 Redis/OceanBase 技术 adapter。Campaign、Resolver、频控 key/TTL/一致性、业务 Model/Repository/SQL/migration 仍由 Mint 定义。Mint Story 发现公共基础缺口时，在本 Story 下创建 Seed 子任务；最终 version 的 wheel 一次构建并按 SHA-256 在 Mint Test 验证，随后将同一 digest 原样提升 release 并更新锁文件。禁止 Git/path 依赖、复制 Seed 实现或反向依赖。
+
 ## 2. 结构
 
 HTTP/Consumer → Use Cases → 业务策略与 Task Command → Mud Resolvers / Stem Gateway。Resolver 分别解析 Account、Contact/Group、Content、Terminal policy、Plugin/Action/Workflow，并逐个校验 tenant、角色、Creator/Owner/User/有效 Own、关联实体、输入 Schema、发布状态和版本。Mint 只生成目标候选、权限来源与版本引用；Stem 在提交时重验并固化权威任务快照。
