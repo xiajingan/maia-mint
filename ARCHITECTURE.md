@@ -8,7 +8,7 @@ Mint 将联系人广播、群广播和群管理等业务意图解析成已授权
 
 ### Seed 依赖契约
 
-Mint 通过正式、精确锁定的 Seed wheel 按需复用配置、上下文、错误/事件、通用状态原语、安全/加密/审计、可观测性及 Redis/OceanBase 技术 adapter。Campaign、Resolver、频控 key/TTL/一致性、业务 Model/Repository/SQL/migration 仍由 Mint 定义。Mint Story 发现公共基础缺口时，在本 Story 下创建 Seed 子任务；最终 version 的 wheel 一次构建并按 SHA-256 在 Mint Test 验证，随后将同一 digest 原样提升 release 并更新锁文件。禁止 Git/path 依赖、复制 Seed 实现或反向依赖。
+Mint 通过正式、精确锁定的 Seed wheel 按需复用配置、上下文、错误/事件、通用状态原语、安全/加密/审计、可观测性及 Redis/OceanBase 技术 adapter。Campaign、Resolver、频控 key/TTL/一致性、业务 Model/Repository/SQL/migration 仍由 Mint 定义。Mint Sprint 发现公共基础缺口时，从当前 Story/Task 向 Seed 写入 `dependency` Assignment；Seed 自主规划并以 `dependency-package` Delivery 返回精确 wheel version + SHA-256 后，Mint 更新锁文件并完成 Test。禁止 `latest`、Git/path 依赖、复制 Seed 实现或反向依赖。
 
 ## 2. 结构
 
