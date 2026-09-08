@@ -1,5 +1,7 @@
 # Mint 架构
 
+**当前 Profile**：`simple-layered`
+
 > Mint 是自动任务业务应用，不是执行引擎。
 
 ## 1. 定位与边界
