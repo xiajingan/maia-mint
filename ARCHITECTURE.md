@@ -4,13 +4,15 @@
 
 > Mint 是自动任务业务应用，不是执行引擎。
 
+> 2026-09-30 对齐 Maia 的 TS/Node.js/Fastify、TiDB/Drizzle 与 BullMQ；以下为目标设计，尚无本轮异步流程或观测验收结果。精确版本与公共约束继承 [Maia 架构](../ARCHITECTURE.md)。
+
 ## 1. 定位与边界
 
 Mint 将联系人广播、群广播和群管理等业务意图解析成已授权、可审计的 Stem Task Command。它负责业务规则、目标解析、去重、频控、影响预览和结果汇总；Task/WorkflowRun/Todo/Execution 全部是 Stem 的规范运行事实，Mint 不直接控制 Celt/Vine，也不直连 Mud 数据库。
 
 ### Seed 依赖契约
 
-Mint 通过正式、精确锁定的 Seed wheel 按需复用配置、上下文、错误/事件、通用状态原语、安全/加密/审计、可观测性及 Redis/OceanBase 技术 adapter。Campaign、Resolver、频控 key/TTL/一致性、业务 Model/Repository/SQL/migration 仍由 Mint 定义。Mint Sprint 发现公共基础缺口时，从当前 Story/Task 向 Seed 写入 `dependency` Assignment；Seed 自主规划并以 `dependency-package` Delivery 返回精确 wheel version + SHA-256 后，Mint 更新锁文件并完成 Test。禁止 `latest`、Git/path 依赖、复制 Seed 实现或反向依赖。
+Mint 按真实需求消费 Seed 已交付的 TS/npm 技术包，锁定版本与制品摘要，缺口通过当前 Story/Task 的 dependency 协作交付。Campaign、Resolver、业务频控、Drizzle 模型/查询/迁移及队列 processor 由 Mint 拥有；BullMQ 直接使用原生 SDK，不预建 MQ 公共服务或复制 Seed 实现。
 
 ## 2. 结构
 
@@ -57,10 +59,40 @@ Mint 私有存储只保存业务参数预设、策略、提交记录和业务结
 
 路线：M0 Resolver/低风险单目标 → M1 联系人广播 → M2 群广播 → M3 群管理 → M4 模板/计划/运营报表 → M5 大规模分片与开放 CampaignType 扩展。
 
+### 3.4 BullMQ 异步节点
+
+对应 US-002～006/010/011/013，节点采用 [Maia 异步方案](../docs/architecture/async-jobs.md)：
+
+```mermaid
+flowchart LR
+  A[提交预览 / 计划到期] --> O[Campaign operation + Outbox]
+  O --> R[mint-resolve Queue / 分片 Job]
+  R --> C[分片结果持久化]
+  C --> P[Flow 父 Job 汇总预览]
+  P --> U[用户确认 + 版本/权限重验]
+  U --> T[事务占用 FrequencyReservation + Submission + Outbox]
+  T --> S[mint-submit Queue / Worker]
+  S --> ST[Stem Command / 对账]
+  ST --> Q[mint-outcome Queue / 投影 Worker]
+```
+
+| 工作 | 使用与边界 |
+|---|---|
+| 大目标集解析 | API 持久化 operation 后返回引用；`mint-resolve` Job 按分页/分片读取 Mud Resolver，I/O 有界并发，CPU 密集去重隔离到 sandboxed processor，禁止单 Job 装载全部目标 |
+| 预览汇总 | 有限分片清单使用 FlowProducer，父 `preview.aggregate` 等必需子 Job 成功并核验持久结果后完成预览；必需分片失败传播至父项，不能用半成品请求确认 |
+| 草稿重算 | 尚未确认且允许替换的同一草稿版本计算可防抖；取消或新版本使旧结果失效。运行中的计算仍须检查版本，不能假定 Debounce 会取消已运行 Job |
+| 延迟/周期计划 | `mint-schedule` 使用 delay/Job Scheduler 唤醒保存的计划，执行前重验时点、版本、权限、确认有效性和取消；需逐时点完整的计划按水位有界补齐，不自动扩大已授权范围 |
+| 提交与业务频控 | `mint-submit` Worker 使用稳定 Submission key 调用 Stem，未知结果先对账。FrequencyReservation 仍由 DB 事务和唯一约束裁决；BullMQ 限速只约束调用负载，不能替代业务发送额度 |
+| 结果投影与导出 | `mint-outcome` Job 按 Stem 来源版本/水位更新目标结果；大导出异步生成受控对象引用，QueueEvents 仅通知进度，最终状态查询业务记录 |
+
+Mint Flow 只组织解析和汇总计算；Action/WorkflowRun/Todo/Execution 的执行依赖、暂停和补偿由 Stem 拥有。取消先持久化业务状态，停止新增分片；在途结果提交前再次检查，清理 Job 不能代替业务取消。
+
+按 [OTel 方案](../docs/architecture/async-jobs.md#62-opentelemetry-与三类观测信号) 关联 Campaign/operation/分片/Submission 与 Stem 引用，区分解析积压、CPU 时间、频控拒绝、提交等待和投影新鲜度。验收覆盖分片失败阻止汇总、重试不重复占额或提交、过期确认阻止计划执行、取消竞态和 Trace/Metrics/Logs 关联。
+
 ## 4. 迁移
 
-既有自动任务模板拆为“业务参数预设 + Mud Workflow/Action 版本引用”，步骤/分支迁入唯一 Workflow 模型。高风险预览只请求并引用 Stem Confirmation，Mint 不签发可授权外部副作用的 token。`maia-mint-v0.1.0` 完成旧 Task/Todo/控制/模板字段映射、消费者切流和数量对账；Test 验证创建、取消、部分失败和未知结果对账后，`maia-mint-v0.2.0` 删除旧 Task/Todo 写入、旧控制 API、旧模板流程字段和适配器，不双写。
+既有模板只保留业务参数预设与 Mud Workflow/Action 引用，执行步骤归 Stem。涉及旧数据与接口时，在对应迭代技术方案按 Harness 规范确定迁移、校验和切换，不在架构预设发布版本或具体迁移执行步骤。高风险确认仍由 Stem 签发与验证。
 
-## 5. 部署与质量
+## 5. 技术边界与质量
 
-Python 3.12/FastAPI/Pydantic/SQLAlchemy/Alembic，依赖 Seed；独立 OCI/Helm release 和私有 Schema。Test 使用真实 Mud/Stem/Celt 最小闭环，契约替身只用于单元测试。关键指标为解析失败、目标规模、频控拒绝、提交延迟、完成率和人工处置率。
+采用 Maia 已选 TS/Node.js/Fastify、TiDB/Drizzle 和 BullMQ，部署资源与运行配置只在 [部署设计](../docs/DEPLOYMENT.md) 维护。Test 使用真实 Mud/Stem/Celt 最小闭环，契约替身只用于单元测试。关键指标为解析失败、目标规模、频控拒绝、提交延迟、完成率和人工处置率。
