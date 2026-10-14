@@ -87,7 +87,7 @@ flowchart LR
 
 Mint Flow 只组织解析和汇总计算；Action/WorkflowRun/Todo/Execution 的执行依赖、暂停和补偿由 Stem 拥有。取消先持久化业务状态，停止新增分片；在途结果提交前再次检查，清理 Job 不能代替业务取消。
 
-按 [OTel 方案](../docs/architecture/async-jobs.md#62-opentelemetry-与三类观测信号) 关联 Campaign/operation/分片/Submission 与 Stem 引用，区分解析积压、CPU 时间、频控拒绝、提交等待和投影新鲜度。验收覆盖分片失败阻止汇总、重试不重复占额或提交、过期确认阻止计划执行、取消竞态和 Trace/Metrics/Logs 关联。
+按 [OTel 方案](../docs/architecture/observability.md) 关联 Campaign/operation/分片/Submission 与 Stem 引用，区分解析积压、CPU 时间、频控拒绝、提交等待和投影新鲜度。验收覆盖分片失败阻止汇总、重试不重复占额或提交、过期确认阻止计划执行、取消竞态和 Trace/Metrics/Logs 关联。
 
 ## 4. 迁移
 
