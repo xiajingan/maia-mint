@@ -4,7 +4,7 @@
 
 > Mint 是自动任务业务应用，不是执行引擎。
 
-> 2026-09-30 对齐 Maia 的 TS/Node.js/Fastify、TiDB/Drizzle 与 BullMQ；以下为目标设计，尚无本轮异步流程或观测验收结果。精确版本与公共约束继承 [Maia 架构](../ARCHITECTURE.md)。
+上游：[Maia 架构](../ARCHITECTURE.md)、[技术栈与版本](../docs/architecture/technology-stack.md)、[产品需求](USER_STORIES.md)。
 
 ## 1. 定位与边界
 
@@ -12,7 +12,7 @@ Mint 将联系人广播、群广播和群管理等业务意图解析成已授权
 
 ### Seed 依赖契约
 
-Mint 按真实需求消费 Seed 已交付的 TS/npm 技术包，锁定版本与制品摘要，缺口通过当前 Story/Task 的 dependency 协作交付。Campaign、Resolver、业务频控、Drizzle 模型/查询/迁移及队列 processor 由 Mint 拥有；BullMQ 直接使用原生 SDK，不预建 MQ 公共服务或复制 Seed 实现。
+Mint 按真实需求消费 Seed 已交付的 TS/npm 技术包，锁定版本与制品摘要。Campaign、Resolver、业务频控、Drizzle Schema/查询及队列 processor 由 Mint 拥有；BullMQ 直接使用原生 SDK，不预建 MQ 公共服务或复制 Seed 实现。
 
 ## 2. 结构
 
@@ -57,8 +57,6 @@ Mint 私有存储只保存业务参数预设、策略、提交记录和业务结
 - 安全：目标、内容、账号、Action、Workflow 分别授权；预览下载短期授权；频率和黑名单服务端强制。
 - 可运营：按 rejected/duplicate/rate-limited/skipped/failed 分类，不以总成功率掩盖单目标失败。
 
-路线：M0 Resolver/低风险单目标 → M1 联系人广播 → M2 群广播 → M3 群管理 → M4 模板/计划/运营报表 → M5 大规模分片与开放 CampaignType 扩展。
-
 ### 3.4 BullMQ 异步节点
 
 对应 US-002～006/010/011/013，节点采用 [Maia 异步方案](../docs/architecture/async-jobs.md)：
@@ -89,10 +87,6 @@ Mint Flow 只组织解析和汇总计算；Action/WorkflowRun/Todo/Execution 的
 
 按 [OTel 方案](../docs/architecture/observability.md) 关联 Campaign/operation/分片/Submission 与 Stem 引用，区分解析积压、CPU 时间、频控拒绝、提交等待和投影新鲜度。验收覆盖分片失败阻止汇总、重试不重复占额或提交、过期确认阻止计划执行、取消竞态和 Trace/Metrics/Logs 关联。
 
-## 4. 迁移
-
-既有模板只保留业务参数预设与 Mud Workflow/Action 引用，执行步骤归 Stem。涉及旧数据与接口时，在对应迭代技术方案按 Harness 规范确定迁移、校验和切换，不在架构预设发布版本或具体迁移执行步骤。高风险确认仍由 Stem 签发与验证。
-
-## 5. 技术边界与质量
+## 4. 技术边界与质量
 
 采用 Maia 已选 TS/Node.js/Fastify、TiDB/Drizzle 和 BullMQ，部署资源与运行配置只在 [部署设计](../docs/DEPLOYMENT.md) 维护。Test 使用真实 Mud/Stem/Celt 最小闭环，契约替身只用于单元测试。关键指标为解析失败、目标规模、频控拒绝、提交延迟、完成率和人工处置率。
