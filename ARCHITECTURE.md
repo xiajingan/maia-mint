@@ -16,9 +16,18 @@ Mint 按真实需求消费 Seed 已交付的 TS/npm 技术包，锁定版本与�
 
 ## 2. 结构
 
-HTTP/Consumer → Use Cases → 业务策略与 Task Command → Mud Resolvers / Stem Gateway。Resolver 分别解析 Account、Contact/Group、Content、Terminal policy、Plugin/Action/Workflow，并逐个校验 tenant、角色、Creator/Owner/User/有效 Own、关联实体、输入 Schema、发布状态和版本。Mint 只生成目标候选、权限来源与版本引用；Stem 在提交时重验并固化权威任务快照。
+HTTP/Consumer → Use Cases → 业务策略与 Task Command → Mud Resolvers / Stem Gateway。Resolver 分别解析 Account、Contact/Group、Content、Terminal policy、Plugin/Action/Workflow，并逐个校验同一根 Workspace、关联实体、输入 Schema、发布状态和版本。权限按 [Maia §2.1](../USER_STORIES.md#21-权限模型)：
 
-Mint 私有存储只保存业务参数预设、策略、提交记录和业务结果投影；预设只能引用已发布 Action/Workflow 版本，不得保存 Step、分支、失败或重试控制。公共资产归 Mud，WorkflowRun/Todo/Execution 归 Stem。跨服务使用版本化 HTTP；私有变更以 Outbox 发布，执行事件以 Inbox + 来源水位消费。
+| 校验 | 规则 |
+|---|---|
+| 操作人 | 对所选 Owner（W 或 W/U）有 Own，由 Mud AccessContext + Seed `access-scope-kernel.v1` 判定 |
+| 依赖资源 | Account、Content、Resource、Action/Workflow 由其所有者服务判定能否以 Owner 身份使用；操作人本人可用不代替 Owner 校验 |
+| 能力 | 资源声明的平台、插件版本、终端能力只做兼容性校验，不兼容为“无法执行” |
+| 联系人 / 群 | 无 Owner，随执行 Account：目标须与该 Account 存在关系；明细可见性取决于对 Account 的 Use |
+
+Mint 只生成目标候选、Owner、使用范围与版本引用；Stem 在提交时重验并固化权威任务快照，每次派发前再以 Owner 身份重验。
+
+Mint 私有存储只保存业务参数预设、策略、提交记录和业务结果投影；CampaignDraft 保存 Creator、所选 Owner 与使用范围（默认仅 Owner，可追加参与人），提交后由 Task 承载，结果投影的可见范围随 Task（全量）或执行账号（切片）；预设只能引用已发布 Action/Workflow 版本，不得保存 Step、分支、失败或重试控制。公共资产归 Mud，WorkflowRun/Todo/Execution 归 Stem。跨服务使用版本化 HTTP；私有变更以 Outbox 发布，执行事件以 Inbox + 来源水位消费。
 
 ## 3. 核心流程
 
@@ -26,9 +35,9 @@ Mint 私有存储只保存业务参数预设、策略、提交记录和业务结
 
 每个目标候选分配不可变 `target_snapshot_id`；Task Command、Todo 与执行事件都携带它，拆成多个 Todo 时另带 `target_unit_id`，聚合按目标及 Stem 的替代/重试关系计算。预览与确认绑定目标集、Content/Action/Workflow 版本、权限来源、参数摘要和过期时间；提交前重验。
 
-频控由 Mint 的 FrequencyReservation 聚合唯一裁决：在 `(tenant, account, target, policy, window)` 上事务性占用额度并设唯一约束；Stem 接受 Task 后标记 consumed，提交失败释放，取消是否返还由版本化策略明确且不可事后改写。Mint 先持久化 reservation、submission id/idempotency key，再调用 Stem；超时按 key 对账，不创建第二个 Task。取消/暂停/重试/回放由权限入口调用 Stem，Mint 只更新业务投影。
+频控由 Mint 的 FrequencyReservation 聚合唯一裁决：在 `(tenant_id, account, target, policy, window)` 上事务性占用额度并设唯一约束；Stem 接受 Task 后标记 consumed，提交失败释放，取消是否返还由版本化策略明确且不可事后改写。Mint 先持久化 reservation、submission id/idempotency key，再调用 Stem；超时按 key 对账，不创建第二个 Task。取消/暂停/重试/回放由权限入口调用 Stem，Mint 只更新业务投影。
 
-结果投影保存 Stem event cursor、新鲜度和来源版本；检测断档后从 Stem 快照/重放接口补齐，乱序按版本合并。页面下钻 Stem 事实时由 Stem 重新鉴权，过期投影不得显示为实时状态。
+结果投影保存 Stem event cursor、新鲜度和来源版本；检测断档后从 Stem 快照/重放接口补齐，乱序按版本合并。页面下钻 Stem 事实时由 Stem 按 Task Own/Use 或执行账号 Own 重新鉴权，过期投影不得显示为实时状态。
 
 ### 3.1 业务模块和领域模型
 
