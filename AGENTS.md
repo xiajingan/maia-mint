@@ -13,7 +13,7 @@ Mint：自动任务应用（详见 ARCHITECTURE.md）
 - [ARCHITECTURE.md](ARCHITECTURE.md)：本工程架构与边界；整体架构见 `../ARCHITECTURE.md`。
 - [PROJECT_RULES.md](PROJECT_RULES.md)：编码规则。
 - `docs/tech/`：迭代技术方案；`docs/test-cases/`：测试用例。
-- `USER_STORIES.md`：本工程用户故事（待迁入总仓 `docs/product/`）。
+- [用户故事](../docs/product/mint/index.md)：本工程 Story（总仓维护，ID 带 `MINT-` 前缀）。
 
 ## 智能体约定
 

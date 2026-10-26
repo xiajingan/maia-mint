@@ -4,7 +4,7 @@
 
 > Mint 是自动任务业务应用，不是执行引擎。
 
-上游：[Maia 架构](../ARCHITECTURE.md)、[技术栈与版本](../docs/architecture/technology-stack.md)、[产品需求](USER_STORIES.md)。
+上游：[Maia 架构](../ARCHITECTURE.md)、[技术栈与版本](../docs/architecture/technology-stack.md)、[产品需求](../docs/product/mint/index.md)。
 
 ## 1. 定位与边界
 
@@ -16,7 +16,7 @@ Mint 按真实需求消费 Seed 已交付的 TS/npm 技术包，锁定版本与�
 
 ## 2. 结构
 
-HTTP/Consumer → Use Cases → 业务策略与 Task Command → Mud Resolvers / Stem Gateway。Resolver 分别解析 Account、Contact/Group、Content、Terminal policy、Plugin/Action/Workflow，并逐个校验同一根 Workspace、关联实体、输入 Schema、发布状态和版本。权限按 [Maia §2.1](../USER_STORIES.md#21-权限模型)：
+HTTP/Consumer → Use Cases → 业务策略与 Task Command → Mud Resolvers / Stem Gateway。Resolver 分别解析 Account、Contact/Group、Content、Terminal policy、Plugin/Action/Workflow，并逐个校验同一根 Workspace、关联实体、输入 Schema、发布状态和版本。权限按 [Maia §2.1](../docs/product/constraints/permission-model.md#21-权限模型)：
 
 | 校验 | 规则 |
 |---|---|
@@ -68,7 +68,7 @@ Mint 私有存储只保存业务参数预设、策略、提交记录和业务结
 
 ### 3.4 BullMQ 异步节点
 
-对应 US-002～006/010/011/013，节点采用 [Maia 异步方案](../docs/architecture/async-jobs.md)：
+对应 MINT-US-002～006/010/011/013，节点采用 [Maia 异步方案](../docs/architecture/async-jobs.md)：
 
 ```mermaid
 flowchart LR
