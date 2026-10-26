@@ -83,7 +83,7 @@
 
 ## 黄金原则（Golden Rules）
 
-> 跨项目通用工程原则，详见 [docs/GOLDEN_RULES.md](docs/GOLDEN_RULES.md)（symlink 自动同步）。
+> 跨项目通用工程原则，原 harness 同步的 GOLDEN_RULES 已退役，要点如下。
 > G-1（共享工具库）、G-2（禁止 YOLO 探测）、G-3（不变式集中管理）。
 
 ## 共享工具库
